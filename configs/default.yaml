@@ -1,0 +1,124 @@
+# =============================================================================
+# Audio Event Detection - Default Configuration
+# =============================================================================
+
+# --- Project paths ---
+paths:
+  data_dir: "data"
+  raw_audio_dir: "data/raw"
+  processed_audio_dir: "data/processed"
+  spectrogram_dir: "data/spectrograms"
+  labels_csv: "data/labels.csv"
+  class_map_file: "data/class_map.json"
+  checkpoint_dir: "checkpoints"
+  log_dir: "logs"
+  metrics_file: "logs/metrics_history.csv"
+  # Google Drive mount path for Colab persistence
+  drive_checkpoint_dir: "" # e.g., "/content/drive/MyDrive/audio-event-detection/checkpoints"
+
+# --- Audio preprocessing ---
+audio:
+  sample_rate: 16000
+  n_channels: 1 # mono
+  clip_duration: 5.0 # seconds
+  normalize: true
+
+# --- Feature extraction (log-mel spectrogram) ---
+features:
+  n_mels: 128
+  window_size_ms: 25 # milliseconds
+  hop_length_ms: 10 # milliseconds
+  f_min: 50 # Hz
+  f_max: 8000 # Hz
+  log_offset: 1.0e-6 # added before log to avoid log(0)
+
+# --- Data augmentation ---
+augmentation:
+  enabled: true
+  time_shift:
+    enabled: true
+    max_shift_ms: 500
+  noise_injection:
+    enabled: true
+    min_snr_db: 5
+    max_snr_db: 20
+  pitch_shift:
+    enabled: true
+    min_semitones: -2
+    max_semitones: 2
+  time_stretch:
+    enabled: true
+    min_rate: 0.8
+    max_rate: 1.2
+  mixup:
+    enabled: true
+    alpha: 0.4
+  spec_augment:
+    enabled: true
+    freq_mask_param: 20 # max frequency bands to mask
+    time_mask_param: 50 # max time steps to mask
+    num_freq_masks: 2
+    num_time_masks: 2
+
+# --- Model architecture ---
+model:
+  backbone: "efficientnet_b0" # efficientnet_b0, efficientnet_b2, etc.
+  pretrained: true
+  num_classes: 50
+  dropout: 0.3
+  pooling: "attention" # max, mean, attention
+  frame_level: true # enable frame-level predictions
+
+# --- Training ---
+training:
+  epochs: 100
+  batch_size: 32
+  learning_rate: 1.0e-4
+  weight_decay: 1.0e-5
+  optimizer: "adam" # adam, adamw
+  scheduler:
+    enabled: true
+    type: "cosine" # cosine, step, plateau
+    warmup_epochs: 5
+    min_lr: 1.0e-6
+    # step scheduler
+    step_size: 20
+    gamma: 0.5
+    # plateau scheduler
+    patience: 5
+    factor: 0.5
+  mixed_precision: true
+  num_workers: 4
+  pin_memory: true
+  gradient_clip_norm: 1.0
+  val_split: 0.15
+  test_split: 0.1
+
+# --- Checkpointing ---
+checkpoint:
+  save_every_n_epochs: 1
+  keep_last_n: 5
+  save_best: true
+  best_metric: "mAP" # metric to track for best model
+
+# --- Inference ---
+inference:
+  window_length: 5.0 # seconds
+  hop_length: 1.0 # seconds
+  threshold: 0.5 # sigmoid threshold for event detection
+  merge_overlapping: true
+  min_event_duration: 0.2 # seconds - discard events shorter than this
+
+# --- Visualization ---
+visualization:
+  figsize: [16, 8]
+  dpi: 150
+  colormap: "viridis"
+  export_format: "png"
+
+# --- Logging ---
+logging:
+  level: "INFO"
+  console: true
+  file: true
+  log_file: "logs/training.log"
