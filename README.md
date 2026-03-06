@@ -4,7 +4,7 @@ Multi-label audio event detection system using EfficientNet-B0 for detecting ove
 
 ## Features
 
-- **Multi-label detection**: Detects ~50 overlapping sound event classes simultaneously
+- **Multi-label detection**: Detects ~47 overlapping sound event classes simultaneously
 - **Frame-level predictions**: Weakly-supervised temporal localization of events within clips
 - **Resumable training**: Full checkpoint system for Google Colab persistence
 - **Sliding window inference**: Handles long audio recordings (minutes to hours)
@@ -68,7 +68,7 @@ pip install -r requirements.txt
 
 ### 2. Collect Training Data (Multi-Dataset)
 
-The system combines multiple public audio datasets, mapping their labels to our 50-class taxonomy:
+The system combines multiple public audio datasets, mapping their labels to our 47-class taxonomy:
 
 | Dataset          | Size              | Auto-download | Classes covered |
 | ---------------- | ----------------- | ------------- | --------------- |
@@ -229,7 +229,7 @@ All parameters are controlled via YAML configs in `configs/`. Key sections:
 
 ## Sound Classes (~50)
 
-The system includes 50 environmental sound events covering speech, animals, vehicles, weather, tools, and household sounds. See `src/data/dataset_preparation.py` for the full list.
+The system includes 47 environmental sound events covering speech, animals, vehicles, weather, tools, and household sounds. See `src/data/dataset_preparation.py` for the full list.
 
 ## Extending the System
 

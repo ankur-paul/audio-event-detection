@@ -205,6 +205,14 @@ def merge_datasets(
 
     print(f"  Active classes: {len(final_counts)}/{len(TARGET_CLASSES)}")
 
+    # Save class_map.json (class name → index, sorted alphabetically)
+    active_classes = sorted(final_counts.keys())
+    class_map = {name: idx for idx, name in enumerate(active_classes)}
+    class_map_path = os.path.join(output_dir, "class_map.json")
+    with open(class_map_path, "w") as f:
+        json.dump(class_map, f, indent=2)
+    print(f"  Class map saved: {class_map_path} ({len(class_map)} classes)")
+
     # Save class statistics
     stats_path = os.path.join(output_dir, "class_statistics.json")
     with open(stats_path, "w") as f:

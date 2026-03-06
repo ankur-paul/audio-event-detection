@@ -2,7 +2,7 @@
 Dataset preparation pipeline for Audio Event Detection.
 
 Handles:
-- Defining the ~50 sound classes
+- Defining the ~47 sound classes
 - Creating/loading label CSV files
 - Splitting data into train/val/test
 - Generating class mappings
@@ -21,7 +21,7 @@ from src.utils.logger import get_logger
 
 logger = get_logger()
 
-# 50 environmental sound classes for multi-label audio event detection
+# 47 environmental sound classes for multi-label audio event detection
 DEFAULT_SOUND_CLASSES = [
     # Human vocal sounds (8)
     "speech",
@@ -40,12 +40,10 @@ DEFAULT_SOUND_CLASSES = [
     "applause",
     "breathing",
     "snoring",
-    # Household / indoor sounds (11)
+    # Household / indoor sounds (8)
     "door_knock",
-    "door_open",
     "door_close",
     "glass_breaking",
-    "dishes_clattering",
     "keyboard_typing",
     "mouse_click",
     "phone_ringing",
@@ -78,8 +76,7 @@ DEFAULT_SOUND_CLASSES = [
     "drilling",
     "saw_cutting",
     "machine_running",
-    # Impact sounds (2)
-    "object_drop",
+    # Impact sounds (1)
     "explosion",
 ]
 

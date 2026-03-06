@@ -2,14 +2,14 @@
 Label mapping module for multi-dataset audio event detection.
 
 Maps class labels from ESC-50, UrbanSound8K, FSD50K, and AudioSet
-to our unified 50-class taxonomy.
+to our unified 47-class taxonomy.
 
 Each mapping is: { source_dataset_label: our_label }
 If a source label maps to None, it is skipped (no match in our taxonomy).
 """
 
 # =============================================================================
-# Our 50 target classes (grouped by category)
+# Our 47 target classes (grouped by category)
 # =============================================================================
 
 TARGET_CLASSES = [
@@ -19,9 +19,9 @@ TARGET_CLASSES = [
     # Human activity sounds (7)
     "footsteps", "running", "clapping", "cheering", "applause",
     "breathing", "snoring",
-    # Household / indoor sounds (11)
-    "door_knock", "door_open", "door_close", "glass_breaking",
-    "dishes_clattering", "keyboard_typing", "mouse_click",
+    # Household / indoor sounds (8)
+    "door_knock", "door_close", "glass_breaking",
+    "keyboard_typing", "mouse_click",
     "phone_ringing", "alarm_clock", "water_running", "toilet_flush",
     # Transportation sounds (8)
     "car_engine", "car_horn", "siren", "motorcycle", "train",
@@ -32,8 +32,8 @@ TARGET_CLASSES = [
     "rain", "thunder", "wind", "fire_crackling", "water_stream",
     # Mechanical / tool sounds (4)
     "hammering", "drilling", "saw_cutting", "machine_running",
-    # Impact sounds (2)
-    "object_drop", "explosion",
+    # Impact sounds (1)
+    "explosion",
 ]
 
 # =============================================================================
@@ -80,7 +80,7 @@ ESC50_MAPPING = {
     "door_wood_knock": "door_knock",
     "mouse_click": "mouse_click",
     "keyboard_typing": "keyboard_typing",
-    "door_wood_creep": "door_open",
+    "door_wood_creep": None,
     "can_opening": None,
     "washing_machine": "machine_running",
     "vacuum_cleaner": "machine_running",
@@ -181,8 +181,8 @@ FSD50K_MAPPING = {
     "Glass": "glass_breaking",
     "Shatter": "glass_breaking",
     "Breaking": "glass_breaking",
-    "Dishes, pots, and pans": "dishes_clattering",
-    "Cutlery, silverware": "dishes_clattering",
+    "Dishes, pots, and pans": None,
+    "Cutlery, silverware": None,
     "Computer keyboard": "keyboard_typing",
     "Typing": "keyboard_typing",
     "Clickety-clack": "keyboard_typing",
@@ -273,10 +273,10 @@ FSD50K_MAPPING = {
     "Engine knocking": "machine_running",
     "Printer": "machine_running",
     # Impact sounds
-    "Thump, thud": "object_drop",
-    "Bang": "object_drop",
-    "Smash, crash": "object_drop",
-    "Bouncing": "object_drop",
+    "Thump, thud": None,
+    "Bang": None,
+    "Smash, crash": None,
+    "Bouncing": None,
     "Explosion": "explosion",
     "Burst, pop": "explosion",
     "Gunshot, gunfire": "explosion",
@@ -311,7 +311,7 @@ AUDIOSET_MID_MAPPING = {
     "/m/07q6cd_": "door_knock",     # Knock
     "/m/02dgv": "door_close",       # Door
     "/m/07q0yl5": "glass_breaking", # Shatter
-    "/m/04brg2": "dishes_clattering", # Dishes
+    "/m/04brg2": None,                # Dishes
     "/m/01m2v": "keyboard_typing",  # Computer keyboard
     "/m/0dxrf": "phone_ringing",    # Telephone bell ringing
     "/m/046dlr": "alarm_clock",     # Alarm clock
@@ -392,7 +392,7 @@ def map_labels(source_labels: list, mapping: dict) -> list:
 
 def get_coverage_report(mapping: dict) -> dict:
     """
-    Show which of our 50 target classes are covered by a mapping.
+    Show which of our 47 target classes are covered by a mapping.
 
     Returns:
         Dict with 'covered', 'missing', 'coverage_pct' keys.

@@ -64,7 +64,7 @@ augmentation:
 model:
   backbone: "efficientnet_b0" # efficientnet_b0, efficientnet_b2, etc.
   pretrained: true
-  num_classes: 50
+  num_classes: 47
   dropout: 0.3
   pooling: "attention" # max, mean, attention
   frame_level: true # enable frame-level predictions
