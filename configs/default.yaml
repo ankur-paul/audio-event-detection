@@ -4,15 +4,15 @@
 
 # --- Project paths ---
 paths:
-  data_dir: "data"
-  raw_audio_dir: "data/raw"
-  processed_audio_dir: "data/processed"
-  spectrogram_dir: "data/spectrograms"
-  labels_csv: "data/labels.csv"
-  class_map_file: "data/class_map.json"
-  checkpoint_dir: "checkpoints"
-  log_dir: "logs"
-  metrics_file: "logs/metrics_history.csv"
+  data_dir: "/content/drive/MyDrive/audio-event-detection/data"
+  raw_audio_dir: "/content/drive/MyDrive/audio-event-detection/data/raw"
+  processed_audio_dir: "/content/drive/MyDrive/audio-event-detection/data/processed"
+  spectrogram_dir: "/content/drive/MyDrive/audio-event-detection/data/spectrograms"
+  labels_csv: "/content/drive/MyDrive/audio-event-detection/data/labels.csv"
+  class_map_file: "/content/drive/MyDrive/audio-event-detection/data/class_map.json"
+  checkpoint_dir: "/content/drive/MyDrive/audio-event-detection/checkpoints"
+  log_dir: "/content/drive/MyDrive/audio-event-detection/logs"
+  metrics_file: "/content/drive/MyDrive/audio-event-detection/logs/metrics_history.csv"
   # Google Drive mount path for Colab persistence
   drive_checkpoint_dir: "" # e.g., "/content/drive/MyDrive/audio-event-detection/checkpoints"
 
