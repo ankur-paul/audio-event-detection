@@ -86,6 +86,12 @@ class AudioEventDataset(Dataset):
         self.use_precomputed = spectrogram_dir is not None and os.path.isdir(
             spectrogram_dir
         )
+
+        if self.use_precomputed:
+            logger.info(f"Using pre-computed spectrograms from {spectrogram_dir}")
+        else:
+            logger.info(f"Using raw audio from {audio_dir} with on-the-fly feature extraction")
+
         if not self.use_precomputed and audio_dir is None:
             raise ValueError(
                 "Either spectrogram_dir (with pre-computed .npy files) or "
@@ -105,6 +111,7 @@ class AudioEventDataset(Dataset):
 
         # Load spectrogram
         if self.use_precomputed:
+            assert self.spectrogram_dir is not None
             spec_path = os.path.join(
                 self.spectrogram_dir,
                 Path(filename).stem + ".npy",
@@ -116,6 +123,7 @@ class AudioEventDataset(Dataset):
                 spectrogram = self.augmentor.augment_spectrogram(spectrogram)
         else:
             # Load and preprocess audio
+            assert self.audio_dir is not None
             audio_path = os.path.join(self.audio_dir, filename)
             audio = preprocess_audio(
                 audio_path,
@@ -180,18 +188,18 @@ def create_dataloaders(
     feat_cfg = config.features
     audio_cfg = config.audio
 
-    common_kwargs = dict(
-        class_map=class_map,
-        spectrogram_dir=config.paths.spectrogram_dir,
-        audio_dir=config.paths.processed_audio_dir,
-        sample_rate=audio_cfg.sample_rate,
-        clip_duration=audio_cfg.clip_duration,
-        n_mels=feat_cfg.n_mels,
-        window_size_ms=feat_cfg.window_size_ms,
-        hop_length_ms=feat_cfg.hop_length_ms,
-        f_min=feat_cfg.f_min,
-        f_max=feat_cfg.f_max,
-    )
+    common_kwargs = {
+        "class_map": class_map,
+        "spectrogram_dir": config.paths.spectrogram_dir,
+        "audio_dir": config.paths.processed_audio_dir,
+        "sample_rate": audio_cfg.sample_rate,
+        "clip_duration": audio_cfg.clip_duration,
+        "n_mels": feat_cfg.n_mels,
+        "window_size_ms": feat_cfg.window_size_ms,
+        "hop_length_ms": feat_cfg.hop_length_ms,
+        "f_min": feat_cfg.f_min,
+        "f_max": feat_cfg.f_max,
+    }
 
     train_dataset = AudioEventDataset(
         entries=train_entries,
