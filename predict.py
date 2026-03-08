@@ -18,7 +18,7 @@ from src.utils.config import load_config
 from src.utils.logger import setup_logger, get_logger
 from src.data.dataset_preparation import load_class_map, get_inverse_class_map
 from src.models.audio_event_model import build_model
-from src.training.checkpoint import CheckpointManager
+from src.training.checkpoint import find_best_checkpoint, load_model_from_checkpoint
 from src.inference.inference_pipeline import InferencePipeline
 from src.visualization.visualizer import (
     plot_event_timeline,
@@ -114,22 +114,23 @@ def main():
     # Build and load model
     model = build_model(config)
 
-    checkpoint_manager = CheckpointManager(
-        checkpoint_dir=config.paths.checkpoint_dir,
-        drive_checkpoint_dir=getattr(config.paths, "drive_checkpoint_dir", None) or None,
-    )
+    drive_dir = getattr(config.paths, "drive_checkpoint_dir", None) or None
 
-    load_best = args.checkpoint == "best"
-    checkpoint_path = args.checkpoint if args.checkpoint and args.checkpoint != "best" else None
+    if args.checkpoint and args.checkpoint != "best":
+        ckpt_path = args.checkpoint
+    else:
+        ckpt_path = find_best_checkpoint(
+            checkpoint_dir=config.paths.checkpoint_dir,
+            drive_dir=drive_dir,
+        )
 
-    state = checkpoint_manager.load_checkpoint(
-        model=model,
-        checkpoint_path=checkpoint_path,
-        load_best=load_best,
-        device=args.device or "cpu",
-    )
-
-    if state.get("epoch", 0) == 0:
+    if ckpt_path:
+        load_model_from_checkpoint(
+            model=model,
+            checkpoint_path=ckpt_path,
+            device=args.device or "cpu",
+        )
+    else:
         logger.warning("No trained checkpoint found. Using randomly initialized model.")
 
     # Create inference pipeline

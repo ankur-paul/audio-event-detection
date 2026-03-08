@@ -14,6 +14,9 @@ import os
 # Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+import pytorch_lightning as pl
+from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
+
 from src.utils.config import load_config, save_config
 from src.utils.logger import setup_logger, get_logger
 from src.data.dataset_preparation import (
@@ -24,7 +27,11 @@ from src.data.dataset_preparation import (
 )
 from src.data.dataset import create_dataloaders
 from src.models.audio_event_model import build_model
-from src.training.trainer import Trainer
+from src.training.trainer import (
+    AudioEventLightningModule,
+    MetricsLoggerCallback,
+    DriveCheckpointCallback,
+)
 
 
 def parse_args():
@@ -65,6 +72,27 @@ def parse_args():
         help="Device to use (cuda/cpu).",
     )
     return parser.parse_args()
+
+
+def _find_resume_checkpoint(config) -> str | None:
+    """Return the path to the latest checkpoint, or None."""
+    import glob
+
+    ckpt_dir = config.paths.checkpoint_dir
+    # Lightning checkpoints
+    pattern = os.path.join(ckpt_dir, "*.ckpt")
+    ckpts = sorted(glob.glob(pattern), key=os.path.getmtime)
+    if ckpts:
+        return ckpts[-1]
+
+    # Try Google Drive fallback
+    drive_dir = getattr(config.paths, "drive_checkpoint_dir", None)
+    if drive_dir:
+        latest_drive = os.path.join(drive_dir, "latest.ckpt")
+        if os.path.exists(latest_drive):
+            return latest_drive
+
+    return None
 
 
 def main():
@@ -149,21 +177,77 @@ def main():
         f"{trainable_params:,} trainable params"
     )
 
-    # Create trainer
-    trainer = Trainer(
-        model=model,
-        config=config,
-        train_loader=train_loader,
-        val_loader=val_loader,
-        device=args.device,
+    # Wrap in Lightning module
+    lit_module = AudioEventLightningModule(model=model, config=config)
+
+    # ---- Callbacks ----
+    train_cfg = config.training
+    ckpt_cfg = config.checkpoint
+
+    callbacks = []
+
+    # Model checkpointing (replaces the old CheckpointManager)
+    checkpoint_callback = ModelCheckpoint(
+        dirpath=config.paths.checkpoint_dir,
+        filename="epoch{epoch:04d}-val_mAP{val_mAP:.4f}",
+        auto_insert_metric_name=False,
+        monitor=f"val_{ckpt_cfg.best_metric}",
+        mode="max",
+        save_top_k=ckpt_cfg.keep_last_n,
+        save_last=True,
+        every_n_epochs=ckpt_cfg.save_every_n_epochs,
+    )
+    callbacks.append(checkpoint_callback)
+
+    # CSV metrics logger (keeps visualize_metrics.py & MetricsTracker working)
+    callbacks.append(MetricsLoggerCallback(metrics_file=config.paths.metrics_file))
+
+    # LR monitor for logging
+    callbacks.append(LearningRateMonitor(logging_interval="epoch"))
+
+    # Google Drive sync (Colab persistence)
+    drive_dir = getattr(config.paths, "drive_checkpoint_dir", None)
+    if drive_dir:
+        callbacks.append(DriveCheckpointCallback(drive_checkpoint_dir=drive_dir))
+
+    # ---- Accelerator / device ----
+    if args.device == "cpu":
+        accelerator, devices = "cpu", "auto"
+    else:
+        accelerator = "gpu" if (args.device == "cuda" or args.device is None) else "cpu"
+        devices = "auto"
+
+    # ---- Resume from checkpoint ----
+    resume_ckpt = None
+    if args.resume:
+        resume_ckpt = _find_resume_checkpoint(config)
+        if resume_ckpt:
+            logger.info(f"Resuming training from: {resume_ckpt}")
+        else:
+            logger.info("No checkpoint found. Starting fresh training.")
+
+    # ---- Build Lightning Trainer ----
+    gradient_clip = getattr(train_cfg, "gradient_clip_norm", 0.0) or None
+
+    trainer = pl.Trainer(
+        max_epochs=train_cfg.epochs,
+        accelerator=accelerator,
+        devices=devices,
+        precision="16-mixed" if train_cfg.mixed_precision else 32,
+        gradient_clip_val=gradient_clip,
+        callbacks=callbacks,
+        default_root_dir=config.paths.log_dir,
+        log_every_n_steps=50,
+        enable_progress_bar=True,
     )
 
-    # Resume if requested
-    if args.resume:
-        trainer.resume_training()
-
-    # Train
-    trainer.train()
+    # ---- Train ----
+    trainer.fit(
+        model=lit_module,
+        train_dataloaders=train_loader,
+        val_dataloaders=val_loader,
+        ckpt_path=resume_ckpt,
+    )
 
     logger.info("Training complete!")
 
