@@ -92,6 +92,12 @@ class AudioEventLightningModule(pl.LightningModule):
 
         y_true = np.concatenate([o["labels"] for o in self.validation_step_outputs])
         y_prob = np.concatenate([o["probs"] for o in self.validation_step_outputs])
+
+        # Guard against NaN (can happen with random weights + mixed precision)
+        if np.isnan(y_prob).any():
+            logger.warning("NaN detected in validation predictions — replacing with 0.")
+            y_prob = np.nan_to_num(y_prob, nan=0.0)
+
         y_pred = (y_prob >= self.threshold).astype(np.float32)
 
         metrics = compute_metrics(
