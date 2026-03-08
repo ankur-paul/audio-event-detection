@@ -11,7 +11,13 @@ Generates:
 import os
 import numpy as np
 import matplotlib
-matplotlib.use("Agg")  # Non-interactive backend for Colab/server
+# Only force non-interactive backend when no display is available (e.g. scripts).
+# In notebooks (Colab/Jupyter), the inline backend is already set and must be kept.
+if matplotlib.get_backend() == "agg" or not os.environ.get("DISPLAY"):
+    try:
+        matplotlib.use("Agg")
+    except Exception:
+        pass
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from matplotlib.colors import to_rgba
