@@ -15,7 +15,7 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import pytorch_lightning as pl
-from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
+from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor, EarlyStopping
 
 from src.utils.config import load_config, save_config
 from src.utils.logger import setup_logger, get_logger
@@ -32,6 +32,7 @@ from src.training.trainer import (
     AudioEventLightningModule,
     MetricsLoggerCallback,
     DriveCheckpointCallback,
+    TrainingTimeCallback,
 )
 
 
@@ -211,6 +212,34 @@ def main():
 
     # LR monitor for logging
     callbacks.append(LearningRateMonitor(logging_interval="epoch"))
+
+    # Early stopping on validation mAP
+    es_cfg = getattr(train_cfg, "early_stopping", None)
+    es_enabled = getattr(es_cfg, "enabled", True) if es_cfg is not None else True
+    if es_enabled:
+        es_patience = getattr(es_cfg, "patience", 8) if es_cfg is not None else 8
+        es_min_delta = getattr(es_cfg, "min_delta", 0.001) if es_cfg is not None else 0.001
+        callbacks.append(
+            EarlyStopping(
+                monitor="val_mAP",
+                mode="max",
+                patience=es_patience,
+                min_delta=es_min_delta,
+                verbose=True,
+            )
+        )
+        logger.info(
+            f"Early stopping enabled: monitor=val_mAP, "
+            f"patience={es_patience}, min_delta={es_min_delta}"
+        )
+
+    # Persistent training time tracking across sessions
+    time_file = getattr(
+        config.paths,
+        "training_time_file",
+        os.path.join(config.paths.log_dir, "training_time.json"),
+    )
+    callbacks.append(TrainingTimeCallback(time_file=time_file))
 
     # Google Drive sync (Colab persistence)
     drive_dir = getattr(config.paths, "drive_checkpoint_dir", None)

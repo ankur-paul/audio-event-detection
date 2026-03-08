@@ -13,6 +13,7 @@ paths:
   checkpoint_dir: "checkpoints"
   log_dir: "/content/drive/MyDrive/audio-event-detection/logs"
   metrics_file: "/content/drive/MyDrive/audio-event-detection/logs/metrics_history.csv"
+  training_time_file: "/content/drive/MyDrive/audio-event-detection/logs/training_time.json"
   drive_checkpoint_dir: "/content/drive/MyDrive/audio-event-detection/checkpoints"
 
 # --- Audio preprocessing ---
@@ -75,6 +76,10 @@ training:
   learning_rate: 1.0e-4
   weight_decay: 1.0e-5
   optimizer: "adam" # adam, adamw
+  early_stopping:
+    enabled: true
+    patience: 8
+    min_delta: 0.001
   scheduler:
     enabled: true
     type: "cosine" # cosine, step, plateau
