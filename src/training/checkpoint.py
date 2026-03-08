@@ -85,13 +85,27 @@ def load_model_from_checkpoint(
 
     state_dict = checkpoint.get("state_dict", checkpoint.get("model_state_dict", {}))
 
-    # Strip the "model." prefix added by Lightning's LightningModule wrapper
-    cleaned = {}
+    # Keep only keys that belong to the raw inference model.
+    # Lightning checkpoints can include training-only tensors such as
+    # ``pos_weight`` and ``criterion.pos_weight`` from the LightningModule.
+    model_keys = set(model.state_dict().keys())
+    cleaned: Dict[str, torch.Tensor] = {}
+
     for key, value in state_dict.items():
         new_key = key.removeprefix("model.")
-        cleaned[new_key] = value
 
-    model.load_state_dict(cleaned)
+        if new_key == "pos_weight" or new_key.startswith("criterion."):
+            continue
+
+        if new_key in model_keys:
+            cleaned[new_key] = value
+
+    missing, unexpected = model.load_state_dict(cleaned, strict=False)
+
+    if unexpected:
+        logger.warning(f"Ignored unexpected checkpoint keys: {unexpected[:5]}")
+    if missing:
+        logger.warning(f"Missing model keys when loading checkpoint: {missing[:5]}")
 
     epoch = checkpoint.get("epoch", 0)
     logger.info(f"Loaded model from epoch {epoch}")
