@@ -18,30 +18,44 @@ logger = get_logger()
 
 def find_best_checkpoint(checkpoint_dir: str, drive_dir: Optional[str] = None) -> Optional[str]:
     """
-    Find the best model checkpoint (saved by Lightning's ModelCheckpoint).
+    Find the best model checkpoint for inference.
 
-    Looks for ``last.ckpt`` or the highest-mAP checkpoint in *checkpoint_dir*,
-    falling back to *drive_dir* if nothing is found locally.
+    Search order (first match wins):
+        1. ``best_model.ckpt`` on Google Drive  (best validation metric)
+        2. ``best_model.ckpt`` in local checkpoint dir
+        3. ``last.ckpt`` in local checkpoint dir
+        4. Any ``.ckpt`` in local dir (newest by mtime)
+        5. ``latest.ckpt`` on Google Drive
     """
+    # 1. Best model on Drive (preferred — survives runtime restarts)
+    if drive_dir:
+        best_drive = Path(drive_dir) / "best_model.ckpt"
+        if best_drive.exists():
+            return str(best_drive)
+
     ckpt_dir = Path(checkpoint_dir)
 
-    # 1. Explicit "last.ckpt" saved by Lightning
+    # 2. Best model locally
+    best_local = ckpt_dir / "best_model.ckpt"
+    if best_local.exists():
+        return str(best_local)
+
+    # 3. last.ckpt saved by Lightning
     last = ckpt_dir / "last.ckpt"
     if last.exists():
         return str(last)
 
-    # 2. Any .ckpt sorted by modification time (newest = latest epoch)
+    # 4. Any .ckpt sorted by modification time (newest = latest epoch)
     pattern = str(ckpt_dir / "*.ckpt")
     ckpts = sorted(glob.glob(pattern), key=os.path.getmtime)
     if ckpts:
         return ckpts[-1]
 
-    # 3. Google Drive fallback
+    # 5. Latest on Drive as last resort
     if drive_dir:
-        for name in ("best_model.ckpt", "latest.ckpt"):
-            p = Path(drive_dir) / name
-            if p.exists():
-                return str(p)
+        latest_drive = Path(drive_dir) / "latest.ckpt"
+        if latest_drive.exists():
+            return str(latest_drive)
 
     return None
 

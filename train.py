@@ -24,6 +24,7 @@ from src.data.dataset_preparation import (
     load_class_map,
     parse_labels_csv,
     split_dataset,
+    compute_pos_weight,
 )
 from src.data.dataset import create_dataloaders
 from src.models.audio_event_model import build_model
@@ -177,8 +178,14 @@ def main():
         f"{trainable_params:,} trainable params"
     )
 
+    # Compute class-balancing weights from training labels
+    import torch
+    pos_weight_np = compute_pos_weight(train_entries, class_map)
+    pos_weight = torch.from_numpy(pos_weight_np)
+    logger.info(f"Class balancing: pos_weight range [{pos_weight.min():.1f}, {pos_weight.max():.1f}]")
+
     # Wrap in Lightning module
-    lit_module = AudioEventLightningModule(model=model, config=config)
+    lit_module = AudioEventLightningModule(model=model, config=config, pos_weight=pos_weight)
 
     # ---- Callbacks ----
     train_cfg = config.training

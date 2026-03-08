@@ -43,16 +43,24 @@ class AudioEventLightningModule(pl.LightningModule):
     mAP / F1 / precision / recall at the end of each validation epoch.
     """
 
-    def __init__(self, model: nn.Module, config):
+    def __init__(self, model: nn.Module, config, pos_weight: Optional[torch.Tensor] = None):
         """
         Args:
             model: An AudioEventDetectionModel instance.
             config: Full project configuration object.
+            pos_weight: Optional per-class positive weights for BCE loss.
+                        Shape (num_classes,). Compensates for class imbalance.
         """
         super().__init__()
         self.model = model
         self.config = config
-        self.criterion = nn.BCEWithLogitsLoss()
+        if pos_weight is not None:
+            self.register_buffer("pos_weight", pos_weight)
+            self.criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
+            logger.info("Using class-balanced BCEWithLogitsLoss (pos_weight enabled)")
+        else:
+            self.pos_weight = None
+            self.criterion = nn.BCEWithLogitsLoss()
         self.threshold = config.inference.threshold
 
         # Accumulate validation outputs for epoch-level metric computation

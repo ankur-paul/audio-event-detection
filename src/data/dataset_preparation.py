@@ -215,6 +215,52 @@ def split_dataset(
     return train_entries, val_entries, test_entries
 
 
+def compute_pos_weight(
+    entries: List[Dict],
+    class_map: Dict[str, int],
+    max_weight: float = 50.0,
+) -> np.ndarray:
+    """
+    Compute per-class positive weights for BCEWithLogitsLoss.
+
+    For each class c:
+        pos_weight_c = N_neg / N_pos = (total - pos_count) / pos_count
+
+    This compensates for class imbalance so that rare classes contribute
+    proportionally more to the loss.
+
+    Args:
+        entries: Training dataset entries (list of dicts with 'labels').
+        class_map: Mapping from class name to index.
+        max_weight: Cap to prevent extreme weights for very rare classes.
+
+    Returns:
+        numpy array of shape (num_classes,) with per-class weights.
+    """
+    num_classes = len(class_map)
+    pos_counts = np.zeros(num_classes, dtype=np.float64)
+    total = len(entries)
+
+    for entry in entries:
+        for label in entry["labels"]:
+            if label in class_map:
+                pos_counts[class_map[label]] += 1
+
+    # Avoid division by zero for classes with no positive samples
+    pos_counts = np.clip(pos_counts, a_min=1.0, a_max=None)
+    neg_counts = total - pos_counts
+
+    weights = neg_counts / pos_counts
+    weights = np.clip(weights, a_min=1.0, a_max=max_weight)
+
+    logger.info(
+        f"Computed pos_weight: min={weights.min():.1f}, "
+        f"max={weights.max():.1f}, mean={weights.mean():.1f}"
+    )
+
+    return weights.astype(np.float32)
+
+
 def save_split_csv(
     entries: List[Dict],
     save_path: str,

@@ -61,7 +61,7 @@ augmentation:
 
 # --- Model architecture ---
 model:
-  backbone: "efficientnet_b2"
+  backbone: "efficientnet_b1"
   pretrained: true
   num_classes: 47
   dropout: 0.3
@@ -78,7 +78,7 @@ training:
   scheduler:
     enabled: true
     type: "cosine" # cosine, step, plateau
-    warmup_epochs: 5
+    warmup_epochs: 3
     min_lr: 1.0e-6
     # step scheduler
     step_size: 20
